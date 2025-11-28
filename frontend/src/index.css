@@ -1,0 +1,203 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+h1, h2 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+}
+
+.header {
+  background-color: #3498db;
+  color: white;
+  padding: 20px;
+  margin-bottom: 30px;
+  border-radius: 8px;
+}
+
+.header h1 {
+  color: white;
+  margin: 0;
+}
+
+.dashboard {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 30px;
+}
+
+.low-stock-alert {
+  background-color: #fff3cd;
+  border: 1px solid #ffc107;
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+}
+
+.low-stock-item {
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  padding: 10px;
+  margin: 5px 0;
+  border-radius: 4px;
+}
+
+.grocery-form {
+  background-color: white;
+  padding: 25px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 30px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: #555;
+}
+
+input, textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+input:focus, textarea:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+button {
+  background-color: #3498db;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-right: 10px;
+}
+
+button:hover {
+  background-color: #2980b9;
+}
+
+button.delete {
+  background-color: #e74c3c;
+}
+
+button.delete:hover {
+  background-color: #c0392b;
+}
+
+button.edit {
+  background-color: #f39c12;
+}
+
+button.edit:hover {
+  background-color: #e67e22;
+}
+
+button.cancel {
+  background-color: #95a5a6;
+}
+
+button.cancel:hover {
+  background-color: #7f8c8d;
+}
+
+.grocery-list {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.grocery-item {
+  border: 1px solid #e0e0e0;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 5px;
+  background-color: #fafafa;
+}
+
+.grocery-item.low-stock {
+  background-color: #ffebee;
+  border-color: #ef5350;
+}
+
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.item-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.item-quantity {
+  font-size: 16px;
+  font-weight: 600;
+  padding: 5px 10px;
+  background-color: #3498db;
+  color: white;
+  border-radius: 4px;
+}
+
+.item-quantity.low {
+  background-color: #e74c3c;
+}
+
+.item-description {
+  color: #666;
+  margin-bottom: 10px;
+}
+
+.item-actions {
+  margin-top: 10px;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  font-size: 18px;
+  color: #666;
+}
+
+.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  border: 1px solid #f5c6cb;
+}
