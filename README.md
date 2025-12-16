@@ -13,6 +13,7 @@ A full-stack web application for tracking grocery inventory with low-stock alert
 - Persistent data storage with Docker volumes
 - Production-ready nginx reverse proxy
 - Health checks for all services
+- Configurable frontend port for multi-app hosting
 
 ## Technology Stack
 
@@ -136,6 +137,7 @@ Default configuration (CHANGE PASSWORDS):
 - **Database Name**: `grocery_db`
 - **Admin User**: `admin` / `CHANGE_ME_STRONG_PASSWORD_123`
 - **App User**: `app_user` / `CHANGE_ME_APP_PASSWORD_456`
+- **Frontend Port**: `8080` (customize as needed)
 
 The `.env` file contains:
 ```env
@@ -150,9 +152,17 @@ DB_PASSWORD=CHANGE_ME_APP_PASSWORD_456
 DB_PORT=5432
 
 VITE_API_URL=/api
+
+# Frontend Port Configuration
+# Choose any available port (recommended: 8080, 8081, 3000, etc.)
+# This allows multiple apps to run on the same server without conflicts
+FRONTEND_PORT=8080
 ```
 
-**Note**: After changing `DB_PASSWORD` in the `.env` file, you must also update the password in `init.sql` to match (see next step).
+**Important Notes:**
+- After changing `DB_PASSWORD` in the `.env` file, you must also update the password in `init.sql` to match (see next step)
+- The `FRONTEND_PORT` can be any available port above 1024
+- If running multiple apps, use different ports (8080, 8081, 8082, etc.)
 
 ### Step 6: Update Database Initialization Script
 
@@ -189,7 +199,6 @@ To do this run the following command to step into the postgres container, login 
 docker compose exec -T postgres psql -U admin -d grocery_db < init.sql
 ```
 
-
 Save and close the file.
 
 ### Step 7: Configure Firewall and Open Ports
@@ -199,10 +208,12 @@ Save and close the file.
 sudo ufw status
 
 # If firewall is active, allow necessary ports
-sudo ufw allow 22/tcp      # SSH (if not already allowed)
-sudo ufw allow 80/tcp      # HTTP (Frontend)
-sudo ufw allow 443/tcp     # HTTPS (if you plan to use SSL later)
-sudo ufw allow 5000/tcp    # Backend API (optional, for direct access)
+sudo ufw allow 22/tcp                # SSH (if not already allowed)
+sudo ufw allow 8080/tcp              # Frontend (or your custom FRONTEND_PORT)
+sudo ufw allow 443/tcp               # HTTPS (if you plan to use SSL later)
+
+# Optional: Allow backend port for direct API access (not recommended for production)
+# sudo ufw allow 5000/tcp
 
 # Reload firewall
 sudo ufw reload
@@ -210,6 +221,8 @@ sudo ufw reload
 # Verify rules
 sudo ufw status numbered
 ```
+
+**Note:** Replace `8080` with your actual `FRONTEND_PORT` value from the `.env` file.
 
 ### Step 8: Build and Start the Application
 
@@ -251,8 +264,8 @@ curl http://localhost:5000/api/health
 ### Step 10: Access the Application
 
 Open your web browser and navigate to:
-- **Local access**: `http://localhost`
-- **Remote access**: `http://YOUR_SERVER_IP`
+- **Local access**: `http://localhost:8080` (or your custom port)
+- **Remote access**: `http://YOUR_SERVER_IP:8080` (or your custom port)
 
 You should see the Grocery Inventory Tracker interface.
 
@@ -397,15 +410,19 @@ docker compose exec backend python -c "print('Hello')"
 
 ### Port Already in Use
 
-If port 80, 5000, or 5432 is already in use:
+If your configured frontend port is already in use:
 
 ```bash
-# Check what's using the port
-sudo lsof -i :80
+# Check what's using the port (replace 8080 with your port)
+sudo lsof -i :8080
 sudo lsof -i :5000
 sudo lsof -i :5432
 
-# Stop the conflicting service or change ports in docker-compose.yml
+# Option 1: Stop the conflicting service
+# Option 2: Change FRONTEND_PORT in .env to a different port
+
+# To find available ports
+sudo netstat -tulpn | grep LISTEN
 ```
 
 ### Container Won't Start
@@ -475,6 +492,26 @@ sudo usermod -aG docker $USER
 newgrp docker
 ```
 
+### Cannot Access Application from Browser
+
+```bash
+# Verify frontend container is running and healthy
+docker compose ps
+
+# Check if the port is actually exposed
+docker port grocery_frontend
+
+# Test local access (replace 8080 with your FRONTEND_PORT)
+curl http://localhost:8080
+
+# Check firewall rules
+sudo ufw status
+
+# Ensure your FRONTEND_PORT is allowed in firewall
+sudo ufw allow 8080/tcp
+sudo ufw reload
+```
+
 ## External Access Configuration
 
 ### Option 1: Direct IP Access
@@ -482,10 +519,10 @@ newgrp docker
 If your server has a public IP:
 
 ```bash
-# Allow port 80 in firewall
-sudo ufw allow 80/tcp
+# Allow your frontend port in firewall (replace 8080 with your port)
+sudo ufw allow 8080/tcp
 
-# Access via: http://YOUR_SERVER_IP
+# Access via: http://YOUR_SERVER_IP:8080
 ```
 
 ### Option 2: Domain Name Setup
@@ -500,7 +537,7 @@ If you have a domain name:
 # Install certbot
 sudo apt install -y certbot python3-certbot-nginx
 
-# Get SSL certificate
+# Get SSL certificate (modify nginx config for domain first)
 sudo certbot --nginx -d yourdomain.com
 ```
 
@@ -510,8 +547,72 @@ If running on home network:
 
 1. Log into your router admin panel
 2. Set up port forwarding:
-   - External Port: 80 → Internal Port: 80 → Server IP
-3. Access via: `http://YOUR_PUBLIC_IP`
+   - External Port: 8080 → Internal Port: 8080 → Server IP
+   - (Use your actual FRONTEND_PORT value)
+3. Access via: `http://YOUR_PUBLIC_IP:8080`
+
+## Running Multiple Applications
+
+This application is designed to work alongside other apps on the same server. Here's how to set up multiple applications:
+
+### Port Planning
+
+Plan your ports before deployment:
+
+```
+App 1 (Grocery Tracker):  FRONTEND_PORT=8080
+App 2 (Todo App):         FRONTEND_PORT=8081
+App 3 (Blog):             FRONTEND_PORT=8082
+```
+
+### Steps for Each Additional App
+
+1. **Clone/copy the application to a different directory**
+   ```bash
+   cp -r linux_app_grocery_tracker linux_app_todo_tracker
+   cd linux_app_todo_tracker
+   ```
+
+2. **Configure unique environment variables**
+   ```bash
+   nano .env
+   ```
+   Change:
+   - `FRONTEND_PORT` to a unique port (e.g., 8081)
+   - Database credentials if sharing the same PostgreSQL server
+   - Database name to avoid conflicts
+
+3. **Open firewall for the new port**
+   ```bash
+   sudo ufw allow 8081/tcp
+   sudo ufw reload
+   ```
+
+4. **Start the application**
+   ```bash
+   docker compose up -d --build
+   ```
+
+5. **Access the new app**
+   ```
+   http://YOUR_SERVER_IP:8081
+   ```
+
+### Container Name Conflicts
+
+If you get container name conflicts, edit `docker-compose.yml` and change the container names:
+
+```yaml
+services:
+  postgres:
+    container_name: todo_postgres  # Changed from grocery_postgres
+  
+  backend:
+    container_name: todo_backend   # Changed from grocery_backend
+  
+  frontend:
+    container_name: todo_frontend  # Changed from grocery_frontend
+```
 
 ## Application Maintenance
 
@@ -604,7 +705,7 @@ sudo chmod +x /usr/local/bin/backup-grocery.sh
 - [ ] Remove external port mappings for PostgreSQL (port 5432)
 - [ ] Remove external port mapping for backend (port 5000) - only expose via nginx
 - [ ] Enable HTTPS with SSL certificates (Let's Encrypt)
-- [ ] Configure firewall to allow only HTTP/HTTPS
+- [ ] Configure firewall to allow only necessary ports (SSH + your FRONTEND_PORT)
 - [ ] Set up automated backups
 - [ ] Implement rate limiting on nginx
 - [ ] Regular security updates for Docker images
@@ -626,7 +727,7 @@ services:
     #   - "5000:5000"  # Comment this out
 ```
 
-All traffic will go through nginx on port 80 (and 443 for HTTPS).
+All traffic will go through nginx on your configured FRONTEND_PORT.
 
 ## Monitoring and Logs
 
@@ -711,10 +812,11 @@ npm run dev
 | Backup database | `docker compose exec -T postgres pg_dump -U admin grocery_db > backup.sql` |
 | Access database | `docker compose exec postgres psql -U admin -d grocery_db` |
 | View resources | `docker stats` |
+| Check port usage | `sudo lsof -i :8080` (replace with your port) |
 
 ### Application URLs
 
-- Frontend: `http://localhost` or `http://YOUR_SERVER_IP`
+- Frontend: `http://localhost:8080` or `http://YOUR_SERVER_IP:8080` (adjust port as configured)
 - Backend API: `http://localhost:5000/api` (internal only after production hardening)
 - Health Check: `http://localhost:5000/api/health`
 
@@ -726,19 +828,43 @@ npm run dev
 - `backend/app.py` - Flask API application
 - `frontend/nginx.conf` - Nginx reverse proxy configuration
 
+### Environment Variables Quick Reference
+
+| Variable | Purpose | Example |
+|----------|---------|---------|
+| `POSTGRES_PASSWORD` | Database admin password | `strong_password_123` |
+| `DB_PASSWORD` | Application user password | `app_password_456` |
+| `FRONTEND_PORT` | Frontend access port | `8080` |
+| `VITE_API_URL` | API endpoint for frontend | `/api` |
+
 ## How Everything Works Together
 
 ### Architecture Flow
 
-1. **User accesses the application** via browser at `http://server-ip`
-2. **Nginx (frontend container)** receives the request on port 80
-3. **For static files** (/, /assets/*), nginx serves the React app
-4. **For API requests** (/api/*), nginx proxies to the backend container
-5. **Backend (Flask)** processes the request and queries PostgreSQL
-6. **PostgreSQL** returns data from the `grocery_items` table
-7. **Backend** returns JSON response to nginx
-8. **Nginx** forwards response to the browser
-9. **React app** updates the UI with the data
+1. **User accesses the application** via browser at `http://server-ip:8080`
+2. **Docker port mapping** forwards port 8080 on host → port 80 in frontend container
+3. **Nginx (frontend container)** receives the request on its internal port 80
+4. **For static files** (/, /assets/*), nginx serves the React app
+5. **For API requests** (/api/*), nginx proxies to the backend container
+6. **Backend (Flask)** processes the request and queries PostgreSQL
+7. **PostgreSQL** returns data from the `grocery_items` table
+8. **Backend** returns JSON response to nginx
+9. **Nginx** forwards response to the browser
+10. **React app** updates the UI with the data
+
+### Port Mapping Explanation
+
+```
+User Browser (port 8080) 
+    ↓
+Host Machine (port 8080) → Docker mapping → Frontend Container (port 80)
+    ↓                                              ↓
+    ↓                                        Nginx serves React app
+    ↓                                              ↓
+    ↓                                        /api requests → Backend Container
+    ↓                                                               ↓
+    ↓                                                         PostgreSQL
+```
 
 ### Data Persistence
 
@@ -763,6 +889,7 @@ For issues or questions:
 3. **Verify status**: `docker compose ps`
 4. **Check resources**: `docker stats`
 5. **Verify environment**: Ensure `.env` matches `init.sql` password
+6. **Check port availability**: `sudo lsof -i :8080` (your configured port)
 
 ## License
 
