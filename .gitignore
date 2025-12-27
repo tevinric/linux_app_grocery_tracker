@@ -39,4 +39,3 @@ Thumbs.db
 
 # Docker
 *.log
-init.sql
